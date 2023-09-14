@@ -16,7 +16,6 @@ public class Borrowing {
 
 
 
-
     public Borrowing(Book book, Borrower borrower, Date borrowingDate, Date returnDate, int borrowingDuration) {
         setBook(book);
         setBorrower(borrower);

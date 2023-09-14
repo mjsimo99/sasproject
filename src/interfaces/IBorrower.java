@@ -14,6 +14,7 @@ public interface IBorrower {
 
     List<Borrower> show();
 
+    Borrower getBorrowerById(int borrowerId);
 
 
 

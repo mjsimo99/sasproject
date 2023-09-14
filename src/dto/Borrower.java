@@ -9,7 +9,6 @@ public class Borrower {
     private String name;
     private int tel;
     private String cin;
-    private String dateOfBirth;
 
     private List<Book> book ;
 
@@ -21,12 +20,11 @@ public class Borrower {
         this.book = book;
     }
 
-    public Borrower(int id, String name, int tel, String cin, String dateOfBirth) {
+    public Borrower(int id, String name, int tel, String cin) {
             setId(id);
             setName(name);
             setTel(tel);
             setCin(cin);
-            setDateOfBirth(dateOfBirth);
     }
 
     public String getCin() {
@@ -41,9 +39,6 @@ public class Borrower {
         return tel;
     }
 
-    public String getDateOfBirth() {
-        return dateOfBirth;
-    }
 
     public String getName() {
         return name;
@@ -53,9 +48,6 @@ public class Borrower {
         this.cin = cin;
     }
 
-    public void setDateOfBirth(String dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
 
     public void setId(int id) {
         this.id = id;
@@ -78,7 +70,6 @@ public class Borrower {
                 ", name='" + name + '\'' +
                 ", tel=" + tel +
                 ", cin=" + cin +
-                ", dateOfBirth='" + dateOfBirth + '\'' +
                 '}';
     }
 }

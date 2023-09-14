@@ -10,15 +10,22 @@ public class DatabaseConnection {
     private static final String USERNAME = "postgres";
     private static final String PASSWORD = "admin";
 
-    public static Connection getConn() {
-        Connection connection = null;
+    private  static  Connection connection;
 
-        try {
-            Class.forName("org.postgresql.Driver");
-            connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-        } catch (ClassNotFoundException | SQLException e) {
-            e.printStackTrace();
+    public static Connection getConn() {
+
+        if(connection==null){
+
+            try {
+                Class.forName("org.postgresql.Driver");
+                connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            } catch (ClassNotFoundException | SQLException e) {
+                e.printStackTrace();
+            }
+
         }
+
+
 
         return connection;
     }

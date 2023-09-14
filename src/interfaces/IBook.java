@@ -14,8 +14,9 @@ public interface IBook {
     List<Book> searchByAuthor(String title);
 
     List<Book> show();
+    Book getBookByISBN(int isbn);
 
-
+    void showStatistics();
 
 
 }

@@ -11,10 +11,10 @@ public class Book {
     public enum StatusBook {
         Lost,
         Borrow,
-        Return,
 
         Available
     }
+    private List<Borrower> borrowers;
 
     public List<Borrower> getBorrowers() {
         return borrowers;
@@ -24,7 +24,6 @@ public class Book {
         this.borrowers = borrowers;
     }
 
-    private List<Borrower> borrowers;
 
 
 

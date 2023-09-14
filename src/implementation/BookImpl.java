@@ -1,32 +1,32 @@
 package implementation;
 
 import dto.Book;
-import dto.Borrower;
-import dto.Borrowing;
 import helper.DatabaseConnection;
 import interfaces.IBook;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class BookImpl implements IBook {
-    private  final String ADD_BOOK = "INSERT INTO books (isbn, title, author, status) VALUES (?, ?, ?, ?)";
-    private  final String UPDATE_BOOK = "UPDATE books SET title = ?, author = ?, status = ? WHERE isbn = ?";
-    private  final String DELETE_BOOK = "DELETE FROM books WHERE isbn = ?";
-    private  final String SEARCH_BY_TITLE = "SELECT * FROM books WHERE title LIKE ?";
-    private  final String SEARCH_BY_AUTHOR = "SELECT * FROM books WHERE author LIKE ?";
-    private  final String SELECT_BOOK = "SELECT * FROM books";
-    private  final String STATISTIC_BOOK = "SELECT status, COUNT(*) as count FROM books GROUP BY status";
+    private static final String ADD_BOOK = "INSERT INTO books (isbn, title, author, status) VALUES (?, ?, ?, ?)";
+    private static final String UPDATE_BOOK = "UPDATE books SET title = ?, author = ?, status = ? WHERE isbn = ?";
+    private static final String DELETE_BOOK = "DELETE FROM books WHERE isbn = ?";
+    private static final String SEARCH_BY_TITLE = "SELECT * FROM books WHERE title LIKE ?";
+    private static final String SEARCH_BY_AUTHOR = "SELECT * FROM books WHERE author LIKE ?";
+    private static final String SELECT_BOOK = "SELECT * FROM books";
+    private static final String STATISTIC_BOOK = "SELECT status, COUNT(*) as count FROM books GROUP BY status";
+
+    public BookImpl() {
+        this.updateBooksStatus();
+    }
+
 
 
     @Override
     public void add(Book book) {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(ADD_BOOK)) {
             preparedStatement.setInt(1, book.getIsbn());
             preparedStatement.setString(2, book.getTitle());
@@ -40,7 +40,8 @@ public class BookImpl implements IBook {
 
     @Override
     public boolean update(Book book) {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_BOOK)) {
             preparedStatement.setString(1, book.getTitle());
             preparedStatement.setString(2, book.getAuthor());
@@ -55,7 +56,8 @@ public class BookImpl implements IBook {
 
     @Override
     public boolean delete(int isbn) {
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(DELETE_BOOK)) {
             preparedStatement.setInt(1, isbn);
             int affectedRows = preparedStatement.executeUpdate();
@@ -69,7 +71,8 @@ public class BookImpl implements IBook {
     @Override
     public List<Book> searchByTitle(String title) {
         List<Book> books = new ArrayList<>();
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_TITLE)) {
             preparedStatement.setString(1, "%" + title + "%");
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -93,7 +96,8 @@ public class BookImpl implements IBook {
     @Override
     public List<Book> searchByAuthor(String author) {
         List<Book> books = new ArrayList<>();
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(SEARCH_BY_AUTHOR)) {
             preparedStatement.setString(1, "%" + author + "%");
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -113,10 +117,12 @@ public class BookImpl implements IBook {
         return books;
     }
 
-
+    @Override
     public List<Book> show() {
         List<Book> books = new ArrayList<>();
-        try (Connection connection = DatabaseConnection.getConn();
+        Connection connection = DatabaseConnection.getConn();
+
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(SELECT_BOOK)) {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
@@ -137,9 +143,11 @@ public class BookImpl implements IBook {
 
 
 
+    @Override
+    public void showStatistics() {
+        Connection connection = DatabaseConnection.getConn();
 
-    public  void showStatistics() {
-        try (Connection connection = DatabaseConnection.getConn();
+        try (
              PreparedStatement preparedStatement = connection.prepareStatement(STATISTIC_BOOK)) {
             ResultSet resultSet = preparedStatement.executeQuery();
             int totalBooks = 0;
@@ -154,6 +162,57 @@ public class BookImpl implements IBook {
             throw new RuntimeException(e);
         }
     }
+    @Override
+
+    public Book getBookByISBN(int isbn) {
+        Connection connection = DatabaseConnection.getConn();
+        try (
+             PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM books WHERE isbn = ?")) {
+            preparedStatement.setInt(1, isbn);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                String title = resultSet.getString("title");
+                String author = resultSet.getString("author");
+                String statusString = resultSet.getString("status");
+                Book.StatusBook status = Book.StatusBook.valueOf(statusString);
+
+                return new Book(isbn, title, author, status);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
+    private void updateBooksStatus() {
+        Connection connection = DatabaseConnection.getConn();
+
+        try {
+            Date currentTime = new Date(System.currentTimeMillis());
+
+            long borrowingDurationMillis = 10 * 24 * 60 * 60 * 1000L;
+            Date dueDate = new Date(currentTime.getTime() - borrowingDurationMillis);
+
+            String updateQuery = "UPDATE books " +
+                    "SET status = 'Lost' "  +
+                    "WHERE status = 'Borrow' " +
+                    "AND EXISTS (SELECT 1 FROM borrowings br " +
+                    "            WHERE br.book_isbn = books.isbn " +
+                    "            AND ? > (br.borrowing_date + ?::interval))";
+
+            try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
+                preparedStatement.setTimestamp(1, new Timestamp(currentTime.getTime()));
+                preparedStatement.setString(2, borrowingDurationMillis + " milliseconds");
+
+                preparedStatement.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
 
 
 }
